@@ -139,7 +139,7 @@ The circular display uses these patterns:
 Edit `include/Config.h`:
 ```cpp
 #define CAN_BAUDRATE    500000  // Match your VCU
-#define CAN_NODE_ID     1       // Your VCU node
+#define CAN_NODE_ID     3       // Your VCU node
 ```
 
 ### Display Parameters
