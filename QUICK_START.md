@@ -105,7 +105,7 @@ The M5Stack Dial should now show:
 2. Modify:
    ```cpp
    #define CAN_BAUDRATE    500000  // Your VCU baud rate
-   #define CAN_NODE_ID     1       // Your VCU node ID
+   #define CAN_NODE_ID     3       // Your ZombieVerter node ID (usually 3)
    ```
 3. Save, Build, Upload
 

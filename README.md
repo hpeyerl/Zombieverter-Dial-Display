@@ -14,7 +14,7 @@ A professional rotary controller and display interface for the ZombieVerter elec
 
 ### Rotary Control Interface
 - **Gear Selection** - Rotate to switch between LOW/HIGH/AUTO/HI-LO modes
-- **Motor Mode** - Choose between Off/Eco/Sport/Boost
+- **Motor Mode** - Choose between MG1 only, MG2 only, MG1+MG2, Blended
 - **Regenerative Braking** - Adjust regen strength from -35% to 0%
 - Smooth 1:1 encoder sensitivity for precise control
 
@@ -32,36 +32,65 @@ A professional rotary controller and display interface for the ZombieVerter elec
 ## Hardware Requirements
 
 - **M5Stack Dial** (ESP32-S3 based rotary controller)
-- **CAN Transceiver Module** - Connects to PORT.A (GPIO 15 TX, GPIO 13 RX)
+- **CAN Transceiver Module** - Connects to Grove Port (GPIO 2 TX, GPIO 1 RX)
 - **ZombieVerter Motor Controller** with CAN bus enabled
 - 12V power supply for M5Dial (or USB-C for testing)
 
 ### Wiring
 
-**M5Stack Dial PORT.A to CAN Transceiver:**
-- GPIO 15 (G15) → CAN TX
-- GPIO 13 (G13) → CAN RX
-- 5V → VCC
-- GND → GND
+**M5Stack Dial Grove Port to CAN Transceiver:**
+- Pin 1 (Yellow) - GPIO 2 → CAN TX
+- Pin 2 (White) - GPIO 1 → CAN RX
+- Pin 3 (Red) - 5V → VCC
+- Pin 4 (Black) - GND → GND
 
 **CAN Transceiver to ZombieVerter:**
 - CAN_H → ZombieVerter CAN_H
 - CAN_L → ZombieVerter CAN_L
 - Ensure proper 120Ω termination resistors on CAN bus
 
+**Note:** The M5Stack Dial has one external Grove port on the bottom/side of the device. Use GPIO 2 (TX) and GPIO 1 (RX) for CAN communication.
+
 See [M5DIAL_PINOUT_CONFIRMED.md](M5DIAL_PINOUT_CONFIRMED.md) for detailed pinout information.
 
 ## ZombieVerter CAN Configuration
 
+The M5Dial communicates with ZombieVerter via CAN bus using two types of messages:
+
+### Control Parameters (M5Dial → ZombieVerter)
+
 Configure these CAN message IDs as **Receive (Rx)** in ZombieVerter web interface:
 
-| Parameter | CAN ID | Direction | Data Format |
-|-----------|--------|-----------|-------------|
-| Gear | 0x300 | Rx | Byte 0: 0-3 (LOW/HIGH/AUTO/HI-LO) |
-| Motor Active | 0x301 | Rx | Byte 0: 0-3 (Off/Eco/Sport/Boost) |
-| Regen Max | 0x302 | Rx | Bytes 0-1: Signed 16-bit (-35 to 0) |
+| Parameter | CAN ID | Direction | Data Format | Values |
+|-----------|--------|-----------|-------------|--------|
+| Gear | 0x300 | Rx | Byte 0: 0-3 | 0=LOW, 1=HIGH, 2=AUTO, 3=HI/LO |
+| Motor Active | 0x301 | Rx | Byte 0: 0-3 | 0=MG1 only, 1=MG2 only, 2=MG1+MG2, 3=Blended |
+| Regen Max | 0x302 | Rx | Bytes 0-1: int16 | -35 to 0 (percentage) |
 
-**Important:** These IDs should be configured as **Rx only** in ZombieVerter. The M5Dial uses optimistic updates to provide instant visual feedback without waiting for CAN confirmation.
+### Telemetry Parameters (ZombieVerter → M5Dial)
+
+Configure these CAN message IDs as **Transmit (Tx)** in ZombieVerter web interface:
+
+| Parameter | CAN ID | Direction | Data Format | Units |
+|-----------|--------|-----------|-------------|-------|
+| Inverter Temp (tmphs) | 0x126 | Tx | Bytes 4-5: int16 | °C |
+| 12V Supply (uaux) | 0x210 | Tx | Bytes 4-5: int16 | V |
+| Motor Speed (speed) | 0x257 | Tx | Bytes 0-1: int16 | RPM |
+| Battery SOC | 0x355 | Tx | Bytes 0-1: int16 | % |
+| Motor Temp (tmpm) | 0x356 | Tx | Bytes 4-5: int16 | °C |
+
+**Important Notes:**
+- These IDs should be configured as **Rx only** for control parameters (0x300-0x302)
+- These IDs should be configured as **Tx only** for telemetry (0x126, 0x210, 0x257, 0x355, 0x356)
+- ZombieVerter does not support bidirectional (Tx+Rx) on the same CAN ID
+- The M5Dial uses optimistic updates - display changes immediately without waiting for CAN confirmation
+
+**Parameter Fetching (SDO):**
+- The M5Dial includes code for requesting parameters via CANopen SDO protocol
+- **⚠️ This feature is currently NOT TESTED and may not work correctly**
+- For reliable operation, use the broadcast telemetry messages listed above
+
+See [CAN_PROTOCOL.md](CAN_PROTOCOL.md) for complete CAN protocol documentation including IVT-S shunt messages and BMS integration.
 
 All other parameters (speed, voltage, current, temperatures, etc.) are received from ZombieVerter's normal broadcast messages.
 
@@ -110,7 +139,7 @@ All other parameters (speed, voltage, current, temperatures, etc.) are received 
 - Changes are sent immediately to ZombieVerter
 
 **MOTOR Screen:**
-- Rotate to select: Off → Eco → Sport → Boost
+- Rotate to select: MG1 only → MG2 only → MG1+MG2 → Blended
 - Motor mode changes instantly
 
 **REGEN Screen:**
@@ -136,9 +165,9 @@ All other parameters (speed, voltage, current, temperatures, etc.) are received 
 ### CAN Bus Settings
 Edit `include/Config.h`:
 ```cpp
-#define CAN_TX_PIN 15  // PORT.A G15
-#define CAN_RX_PIN 13  // PORT.A G13
-#define CAN_NODE_ID 3  // ZombieVerter node ID (usually 1 or 3)
+#define CAN_TX_PIN 2   // Grove Port Pin 1 (Yellow)
+#define CAN_RX_PIN 1   // Grove Port Pin 2 (White)
+#define CAN_NODE_ID 3  // ZombieVerter node ID (usually 3, sometimes 1)
 ```
 
 ### WiFi Settings
@@ -204,6 +233,7 @@ See [CAN_TROUBLESHOOTING.md](CAN_TROUBLESHOOTING.md) for detailed debugging step
 ## Documentation
 
 - [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) - Detailed build and upload guide
+- [CAN_PROTOCOL.md](CAN_PROTOCOL.md) - Complete CAN bus protocol reference
 - [SCREENS_GUIDE.md](SCREENS_GUIDE.md) - Complete screen-by-screen documentation
 - [PARAMS_JSON_GUIDE.md](PARAMS_JSON_GUIDE.md) - Parameter configuration reference
 - [WIFI_FEATURE.md](WIFI_FEATURE.md) - WiFi setup and usage

@@ -57,14 +57,14 @@ CAN RX: ID=0x583 Len=8 Data=[...]  ← NOW WORKS!
 
 ## How Did We Miss This?
 
-Most ZombieVerter installations use **Node ID 1** (the default), so that's what was coded.
+Many ZombieVerter installations use **Node ID 3** (common for ZombieVerter), though some use Node ID 1.
 
-But you've configured yours as **Node 3** - totally valid!
+Your setup uses **Node 3** - which is the typical configuration for ZombieVerter.
 
 Common node ID assignments:
-- **Node 1**: VCU (most common)
+- **Node 1**: Alternative VCU configuration
 - **Node 2**: BMS
-- **Node 3**: VCU (alternate)
+- **Node 3**: ZombieVerter VCU (most common)
 - **Node 4**: Charger
 - etc.
 

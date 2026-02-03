@@ -120,14 +120,14 @@ Common rates:
 **ZombieVerter default**: Usually Node ID = 1
 
 The code expects:
-- **TX to**: 0x601 (0x600 + node 1)
-- **RX from**: 0x581 (0x580 + node 1)
+- **TX to**: 0x603 (0x600 + node 3)
+- **RX from**: 0x583 (0x580 + node 3)
 
 ### If Your VCU Uses Different Node ID:
 
 Edit `include/Config.h`:
 ```cpp
-#define CAN_NODE_ID     1  // Change to match your VCU
+#define CAN_NODE_ID     3  // Change to match your ZombieVerter
 ```
 
 ---
@@ -292,7 +292,7 @@ If you have a CAN analyzer or another CAN device:
 - [ ] CAN wiring correct (H/L not swapped)
 - [ ] CAN unit powered (5V from Grove)
 - [ ] CAN baud rate matches (500kbps default)
-- [ ] CAN node ID matches (1 default)
+- [ ] CAN node ID matches (3 default for ZombieVerter)
 - [ ] params.json has correct parameter IDs
 - [ ] ZombieVerter CAN enabled in settings
 - [ ] ZombieVerter SDO enabled
